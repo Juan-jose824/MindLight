@@ -9,29 +9,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.*
 import androidx.wear.tooling.preview.devices.WearDevices
-import com.example.mindlight.R
 import com.example.mindlight.presentation.sensors.HeartRateViewModel
 import com.example.mindlight.presentation.sensors.LightSensorViewModel
 import com.example.mindlight.presentation.theme.MindLightTheme
-import kotlinx.coroutines.delay
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mindlight.viewmodel.SensorEventViewModel
-import com.example.mindlight.viewmodel.SensorEventViewModelFactory
 import com.example.mindlight.data.MindLightDatabase
 import com.example.mindlight.data.SensorEventRepository
-import kotlinx.coroutines.launch
-import androidx.compose.ui.platform.LocalContext
-import com.example.mindlight.sync.sendSensorDataToPhone
-
-
-
+import com.example.mindlight.viewmodel.SensorEventViewModel
+import com.example.mindlight.viewmodel.SensorEventViewModelFactory
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,9 +36,7 @@ class MainActivity : ComponentActivity() {
             var showSplash by remember { mutableStateOf(true) }
 
             if (showSplash) {
-                SplashScreen {
-                    showSplash = false
-                }
+                SplashScreen { showSplash = false }
             } else {
                 WearApp("Android")
             }
@@ -65,29 +55,22 @@ fun SplashScreen(onTimeout: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colors.background),
+                .background(color = androidx.compose.ui.graphics.Color(0xFFFFF9C4)), // Amarillo claro
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "🌙 MindLight",
                     style = MaterialTheme.typography.title2,
-                    color = MaterialTheme.colors.primary
+                    color = androidx.compose.ui.graphics.Color.Black
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
                     text = "Equilibra tu mente y tu entorno",
                     style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.secondary,
+                    color = androidx.compose.ui.graphics.Color.Black,
                     textAlign = TextAlign.Center
                 )
-               /* Text(
-                    text = "✅ Monitoreando...",
-                    style = MaterialTheme.typography.caption1,
-                    color = MaterialTheme.colors.primary,
-                    textAlign = TextAlign.Center
-                )*/
-
             }
         }
     }
@@ -95,7 +78,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
 
 @Composable
 fun WearApp(
-    greetingName: String,
+    name: String,
     heartRateViewModel: HeartRateViewModel = viewModel(),
     lightSensorViewModel: LightSensorViewModel = viewModel()
 ) {
@@ -103,62 +86,75 @@ fun WearApp(
     val lightLevelState = lightSensorViewModel.lightLevel.collectAsState()
     val context = LocalContext.current
 
-    // Crear instancia del ViewModel con Factory
     val database = remember { MindLightDatabase.getDatabase(context) }
     val repository = remember { SensorEventRepository(database.sensorEventDao()) }
-    val viewModelFactory = remember { SensorEventViewModelFactory(repository) }
-    val sensorEventViewModel: SensorEventViewModel = viewModel(factory = viewModelFactory)
+    val sensorEventViewModel: SensorEventViewModel = viewModel(
+        factory = SensorEventViewModelFactory(repository)
+    )
 
     val mood = analyzeMood(heartRateState.value, lightLevelState.value)
 
-    // Guardar evento cuando haya datos disponibles
+    val sensorStatus = remember { mutableStateOf(0) }
     LaunchedEffect(heartRateState.value, lightLevelState.value) {
-        val heartRate = heartRateState.value
-        val light = lightLevelState.value
+        var status = 0
+        if (heartRateState.value != null) status += 1
+        if (lightLevelState.value != null) status += 2
+        sensorStatus.value = status
+    }
 
-        if (heartRate != null && light != null) {
-            // ✅ Ahora también se envía al teléfono
-            sensorEventViewModel.saveSensorEvent(heartRate, light, mood, context)
+    LaunchedEffect(heartRateState.value, lightLevelState.value) {
+        heartRateState.value?.let { hr ->
+            lightLevelState.value?.let { lux ->
+                sensorEventViewModel.saveSensorEvent(hr, lux, mood, context)
+            }
         }
     }
 
-    // UI
     MindLightTheme {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colors.background),
+                .background(color = androidx.compose.ui.graphics.Color.White), // fondo blanco para visibilidad
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                TimeText()
-                Greeting(greetingName = greetingName)
-                Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(16.dp)
+            ) {
 
-                heartRateState.value?.let { bpm ->
-                    Text(
-                        text = "❤️ ${bpm.toInt()} bpm",
-                        color = MaterialTheme.colors.secondary,
-                        textAlign = TextAlign.Center
-                    )
-                } ?: Text("Esperando ritmo cardíaco...", color = MaterialTheme.colors.secondary)
+                Text(
+                    text = "MindLight está activo",
+                    color = androidx.compose.ui.graphics.Color.Black,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Estado sensores: ${sensorStatus.value}",
+                    color = androidx.compose.ui.graphics.Color.Black,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(8.dp))
 
-                lightLevelState.value?.let { lux ->
-                    Text(
-                        text = "\uD83D\uDCA1 Luz: ${lux.toInt()} lux",
-                        color = MaterialTheme.colors.secondary,
-                        textAlign = TextAlign.Center
-                    )
-                } ?: Text("Esperando sensor de luz...", color = MaterialTheme.colors.secondary)
+                Text(
+                    text = heartRateState.value?.let { "❤️ Ritmo cardíaco: ${it.toInt()} bpm" }
+                        ?: "Esperando ritmo cardíaco…",
+                    color = androidx.compose.ui.graphics.Color.Black,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = lightLevelState.value?.let { "💡 Luz ambiental: ${it.toInt()} lux" }
+                        ?: "Esperando sensor de luz…",
+                    color = androidx.compose.ui.graphics.Color.Black,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(12.dp))
 
                 Text(
                     text = mood,
-                    color = MaterialTheme.colors.primary,
-                    style = MaterialTheme.typography.caption1,
+                    color = androidx.compose.ui.graphics.Color.Black,
                     textAlign = TextAlign.Center
                 )
             }
@@ -169,29 +165,26 @@ fun WearApp(
 
 
 @Composable
-fun Greeting(greetingName: String) {
+fun Greeting(name: String) {
     Text(
         modifier = Modifier.fillMaxWidth(),
+        text = "Hola $name",
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        text = stringResource(R.string.hello_world, greetingName)
+        color = androidx.compose.ui.graphics.Color.Black
     )
 }
 
 @Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
-fun DefaultPreview() {
-    WearApp("Preview Android")
+fun PreviewWearApp() {
+    WearApp("Preview")
 }
 
-// Función para analizar el estado emocional basada en sensores
-fun analyzeMood(heartRate: Float?, lightLevel: Float?): String {
-    return when {
-        heartRate == null || lightLevel == null -> "Esperando datos..."
-        heartRate > 100 && lightLevel < 20 -> "Posible estrés: respira profundo"
-        heartRate < 70 && lightLevel > 100 -> "Ambiente relajado"
-        heartRate > 110 -> "Alta actividad o tensión"
-        lightLevel < 10 -> "Entorno muy oscuro"
-        else -> "Estado estable"
-    }
+fun analyzeMood(hr: Float?, lux: Float?): String = when {
+    hr == null || lux == null -> "Esperando datos…"
+    hr > 100 && lux < 20 -> "Posible estrés: respira profundo"
+    hr < 70 && lux > 100 -> "Ambiente relajado"
+    hr > 110 -> "Alta actividad o tensión"
+    lux < 10 -> "Entorno muy oscuro"
+    else -> "Estado estable"
 }

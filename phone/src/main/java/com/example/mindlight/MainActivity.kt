@@ -25,6 +25,8 @@ class MainActivity : AppCompatActivity() {
         binding.eventsRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.eventsRecyclerView.adapter = adapter
 
+        sensorEventViewModel.loadEvents()
+
         lifecycleScope.launch {
             sensorEventViewModel.events.collectLatest { events ->
                 adapter.submitList(events)
