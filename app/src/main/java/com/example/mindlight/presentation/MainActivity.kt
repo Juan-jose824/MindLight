@@ -1,26 +1,31 @@
 package com.example.mindlight.presentation
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.*
 import androidx.wear.tooling.preview.devices.WearDevices
+import com.example.mindlight.data.MindLightDatabase
+import com.example.mindlight.data.SensorEventRepository
 import com.example.mindlight.presentation.sensors.HeartRateViewModel
 import com.example.mindlight.presentation.sensors.LightSensorViewModel
 import com.example.mindlight.presentation.theme.MindLightTheme
-import com.example.mindlight.data.MindLightDatabase
-import com.example.mindlight.data.SensorEventRepository
 import com.example.mindlight.viewmodel.SensorEventViewModel
 import com.example.mindlight.viewmodel.SensorEventViewModelFactory
 import kotlinx.coroutines.delay
@@ -29,6 +34,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // 🔐 Solicitar permiso BODY_SENSORS si no está concedido
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BODY_SENSORS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.BODY_SENSORS),
+                100
+            )
+        }
 
         setTheme(android.R.style.Theme_DeviceDefault)
 
@@ -55,20 +73,20 @@ fun SplashScreen(onTimeout: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = androidx.compose.ui.graphics.Color(0xFFFFF9C4)), // Amarillo claro
+                .background(color = Color(0xFFFFF9C4)), // Amarillo claro
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "🌙 MindLight",
                     style = MaterialTheme.typography.title2,
-                    color = androidx.compose.ui.graphics.Color.Black
+                    color = Color.Black
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
                     text = "Equilibra tu mente y tu entorno",
                     style = MaterialTheme.typography.caption1,
-                    color = androidx.compose.ui.graphics.Color.Black,
+                    color = Color.Black,
                     textAlign = TextAlign.Center
                 )
             }
@@ -114,24 +132,23 @@ fun WearApp(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = androidx.compose.ui.graphics.Color.White), // fondo blanco para visibilidad
+                .background(Color.White), // fondo blanco
             contentAlignment = Alignment.Center
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(16.dp)
             ) {
-
                 Text(
                     text = "MindLight está activo",
-                    color = androidx.compose.ui.graphics.Color.Black,
+                    color = Color.Black,
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(8.dp))
 
                 Text(
                     text = "Estado sensores: ${sensorStatus.value}",
-                    color = androidx.compose.ui.graphics.Color.Black,
+                    color = Color.Black,
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(8.dp))
@@ -139,7 +156,7 @@ fun WearApp(
                 Text(
                     text = heartRateState.value?.let { "❤️ Ritmo cardíaco: ${it.toInt()} bpm" }
                         ?: "Esperando ritmo cardíaco…",
-                    color = androidx.compose.ui.graphics.Color.Black,
+                    color = Color.Black,
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(8.dp))
@@ -147,31 +164,19 @@ fun WearApp(
                 Text(
                     text = lightLevelState.value?.let { "💡 Luz ambiental: ${it.toInt()} lux" }
                         ?: "Esperando sensor de luz…",
-                    color = androidx.compose.ui.graphics.Color.Black,
+                    color = Color.Black,
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(12.dp))
 
                 Text(
                     text = mood,
-                    color = androidx.compose.ui.graphics.Color.Black,
+                    color = Color.Black,
                     textAlign = TextAlign.Center
                 )
             }
         }
     }
-}
-
-
-
-@Composable
-fun Greeting(name: String) {
-    Text(
-        modifier = Modifier.fillMaxWidth(),
-        text = "Hola $name",
-        textAlign = TextAlign.Center,
-        color = androidx.compose.ui.graphics.Color.Black
-    )
 }
 
 @Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
