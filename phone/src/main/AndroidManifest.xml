@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.mindlight">
 
     <application
         android:allowBackup="true"
@@ -8,26 +9,41 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MindLight">
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-
+        <!-- Servicio DataClient (déjalo si vas a seguir sincronizando con DataClient) -->
         <service
             android:name=".sync.PhoneDataListenerService"
-            android:exported="true">
+            android:exported="true"
+            android:permission="com.google.android.gms.permission.BIND_LISTENER">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
                 <data android:scheme="wear" android:pathPrefix="/mindlight/sensor_data" />
             </intent-filter>
         </service>
 
-    </application>
+        <!-- Servicio MessageClient: recibe los mensajes enviados desde el reloj -->
+        <service
+            android:name=".service.PhoneMessageReceiverService"
+            android:exported="true"
+            android:permission="com.google.android.gms.permission.BIND_LISTENER">
+            <intent-filter>
+                <!-- Acción para mensajes inmediatos -->
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <!-- Ruta exacta que usas al enviar: sendMessage(..., "/sensor_data", ...) -->
+                <data android:scheme="wear"
+                    android:host="*"
+                    android:path="/sensor_data" />
+            </intent-filter>
+        </service>
 
+    </application>
 </manifest>

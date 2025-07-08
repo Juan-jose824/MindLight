@@ -5,42 +5,51 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mindlight.data.SensorEventEntity
 import com.example.mindlight.data.SensorEventRepository
-import com.example.mindlight.sync.sendSensorDataToPhone
+import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
-class SensorEventViewModel(private val repository: SensorEventRepository) : ViewModel() {
+class SensorEventViewModel(
+    private val repository: SensorEventRepository
+) : ViewModel() {
 
-    private val _events = MutableStateFlow<List<SensorEventEntity>>(emptyList())
-    val events: StateFlow<List<SensorEventEntity>> get() = _events
+    // Estado que indica si la sincronización fue exitosa
+    private val _syncStatus = MutableStateFlow<Boolean?>(null)
+    val syncStatus: StateFlow<Boolean?> get() = _syncStatus
 
-    fun insertEvent(event: SensorEventEntity) {
+    // Función para guardar el evento y enviar los datos al teléfono
+    fun saveEvent(heartRate: Float, lightLevel: Float, mood: String, context: Context) {
         viewModelScope.launch {
+            val timestamp = System.currentTimeMillis()
+
+            val event = SensorEventEntity(
+                timestamp = timestamp,
+                heartRate = heartRate,
+                lightLevel = lightLevel,
+                mood = mood
+            )
+
+            // Guardar en la base local
             repository.insertEvent(event)
-            _events.value = repository.getAllEvents()
-        }
-    }
 
-    fun loadEvents() {
-        viewModelScope.launch {
-            _events.value = repository.getAllEvents()
-        }
-    }
+            // Enviar al teléfono mediante Data Layer
+            try {
+                val message = "$heartRate|$lightLevel|$mood|$timestamp"
 
-    // Función actualizada para guardar evento y enviarlo al teléfono
-    fun saveSensorEvent(heartRate: Float, lightLevel: Float, mood: String, context: Context) {
-        val event = SensorEventEntity(
-            timestamp = System.currentTimeMillis(),
-            heartRate = heartRate,
-            lightLevel = lightLevel,
-            mood = mood
-        )
+                val nodes = Wearable.getNodeClient(context).connectedNodes.await()
+                for (node in nodes) {
+                    Wearable.getMessageClient(context)
+                        .sendMessage(node.id, "/sensor_data", message.toByteArray())
+                        .await()
+                }
 
-        viewModelScope.launch {
-            repository.insertEvent(event)
-            _events.value = repository.getAllEvents()
-            sendSensorDataToPhone(context, heartRate, lightLevel, mood)
+                _syncStatus.value = true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _syncStatus.value = false
+            }
         }
     }
 }
