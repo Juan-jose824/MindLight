@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp"
+    android:background="@android:color/black">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/text_historial"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Historial MindLight"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:gravity="start"
+            android:scrollbars="vertical" />
+    </ScrollView>
+
+</FrameLayout>

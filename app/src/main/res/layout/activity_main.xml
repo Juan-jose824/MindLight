@@ -1,7 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/box_inset_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:padding="10dp">
 
-</LinearLayout>
+    <LinearLayout
+        android:id="@+id/main_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/text_hr"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="❤️ Ritmo cardíaco:"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/text_activity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Estado:"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/text_hrv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HRV:"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/text_light"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💡 Luz:"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+</FrameLayout>
